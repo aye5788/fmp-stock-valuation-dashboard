@@ -48,12 +48,6 @@ def valuation_panel(symbol):
 
     st.write(f"Current Price: ${price:,.2f}")
 
-    st.divider()
-
-    # -----------------------------
-    # Revenue Multiple Model
-    # -----------------------------
-
     multiple = st.slider(
         "EV / Revenue Multiple",
         min_value=1.0,
@@ -70,88 +64,60 @@ def valuation_panel(symbol):
 
     revenue_delta = upside_downside(revenue_price, price)
 
-    st.metric(
-        "Revenue Multiple Value",
-        f"${revenue_price:,.2f}",
-        f"{revenue_delta:.1%}"
-    )
+    col1, col2 = st.columns(2)
 
-    st.caption(
-        f"Revenue: ${revenue/1e9:.1f}B | Multiple Used: {multiple}x"
-    )
-
-    st.divider()
-
-    # -----------------------------
-    # PEG Model
-    # -----------------------------
-
-    if revenue_growth <= 0:
+    with col1:
 
         st.metric(
-            "PEG Model",
-            "Not meaningful",
-            "Negative growth"
+            "Revenue Multiple Value",
+            f"${revenue_price:,.2f}",
+            f"{revenue_delta:.1%}"
         )
 
-    else:
+        if revenue_growth > 0:
 
-        peg_price = peg_fair_value(
-            eps,
-            revenue_growth
+            peg_price = peg_fair_value(
+                eps,
+                revenue_growth
+            )
+
+            peg_delta = upside_downside(peg_price, price)
+
+            st.metric(
+                "PEG Model Value",
+                f"${peg_price:,.2f}",
+                f"{peg_delta:.1%}"
+            )
+
+        else:
+
+            st.metric(
+                "PEG Model",
+                "Not meaningful",
+                "Negative growth"
+            )
+
+    with col2:
+
+        score = rule_of_40_score(
+            revenue_growth,
+            fcf_margin
         )
-
-        peg_delta = upside_downside(peg_price, price)
 
         st.metric(
-            "PEG Model Value",
-            f"${peg_price:,.2f}",
-            f"{peg_delta:.1%}"
+            "Rule of 40 Score",
+            f"{score:.2f}"
         )
 
-        st.caption(
-            f"EPS: {eps:.2f} | Growth: {revenue_growth:.2%}"
+        fcf_price = fcf_yield_model(
+            fcf,
+            shares
         )
 
-    st.divider()
+        fcf_delta = upside_downside(fcf_price, price)
 
-    # -----------------------------
-    # Rule of 40
-    # -----------------------------
-
-    score = rule_of_40_score(
-        revenue_growth,
-        fcf_margin
-    )
-
-    st.metric(
-        "Rule of 40 Score",
-        f"{score:.2f}"
-    )
-
-    st.caption(
-        f"Revenue Growth: {revenue_growth:.2%} | FCF Margin: {fcf_margin:.2%}"
-    )
-
-    st.divider()
-
-    # -----------------------------
-    # FCF Yield Model
-    # -----------------------------
-
-    fcf_price = fcf_yield_model(
-        fcf,
-        shares
-    )
-
-    fcf_delta = upside_downside(fcf_price, price)
-
-    st.metric(
-        "FCF Yield Value",
-        f"${fcf_price:,.2f}",
-        f"{fcf_delta:.1%}"
-    )
-
-    st.caption(
-        f"Free Cash Flow: ${fcf/1e9:.1f}B"
-    )
+        st.metric(
+            "FCF Yield Value",
+            f"${fcf_price:,.2f}",
+            f"{fcf_delta:.1%}"
+        )
