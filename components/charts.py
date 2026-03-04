@@ -6,18 +6,12 @@ from api.fmp_client import get_price_history
 
 
 def price_chart(symbol):
-    """
-    Renders interactive stock price chart.
-    """
 
     df = get_price_history(symbol)
 
     if df.empty:
         st.warning("No price data available.")
         return
-
-    # ensure date format
-    df["date"] = pd.to_datetime(df["date"])
 
     df = df.sort_values("date")
 
@@ -26,7 +20,7 @@ def price_chart(symbol):
     fig.add_trace(
         go.Scatter(
             x=df["date"],
-            y=df["close"],
+            y=df["price"],
             mode="lines",
             name="Price"
         )
