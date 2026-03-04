@@ -27,7 +27,17 @@ def fundamentals_charts(symbol):
     cashflow = cashflow.sort_values("date")
     balance = balance.sort_values("date")
 
-    st.subheader("Fundamentals")
+    # ---------------------------
+    # YoY calculations
+    # ---------------------------
+
+    income["revenue_yoy"] = income["revenue"].pct_change()
+    income["gross_yoy"] = income["grossProfit"].pct_change()
+    income["net_yoy"] = income["netIncome"].pct_change()
+
+    cashflow["fcf_yoy"] = cashflow["freeCashFlow"].pct_change()
+
+    st.header("Fundamentals")
 
     col1, col2 = st.columns(2)
 
@@ -39,7 +49,11 @@ def fundamentals_charts(symbol):
         fig.add_bar(
             x=income["date"],
             y=income["revenue"],
-            name="Revenue"
+            text=[
+                f"{v:.0%}" if pd.notna(v) else ""
+                for v in income["revenue_yoy"]
+            ],
+            textposition="outside"
         )
 
         fig.update_layout(
@@ -58,7 +72,11 @@ def fundamentals_charts(symbol):
         fig.add_bar(
             x=income["date"],
             y=income["grossProfit"],
-            name="Gross Profit"
+            text=[
+                f"{v:.0%}" if pd.notna(v) else ""
+                for v in income["gross_yoy"]
+            ],
+            textposition="outside"
         )
 
         fig.update_layout(
@@ -79,7 +97,11 @@ def fundamentals_charts(symbol):
         fig.add_bar(
             x=income["date"],
             y=income["netIncome"],
-            name="Net Income"
+            text=[
+                f"{v:.0%}" if pd.notna(v) else ""
+                for v in income["net_yoy"]
+            ],
+            textposition="outside"
         )
 
         fig.update_layout(
@@ -98,7 +120,11 @@ def fundamentals_charts(symbol):
         fig.add_bar(
             x=cashflow["date"],
             y=cashflow["freeCashFlow"],
-            name="Free Cash Flow"
+            text=[
+                f"{v:.0%}" if pd.notna(v) else ""
+                for v in cashflow["fcf_yoy"]
+            ],
+            textposition="outside"
         )
 
         fig.update_layout(
@@ -121,8 +147,7 @@ def fundamentals_charts(symbol):
         fig.add_scatter(
             x=income["date"],
             y=income["operatingMargin"],
-            mode="lines+markers",
-            name="Operating Margin"
+            mode="lines+markers"
         )
 
         fig.update_layout(
