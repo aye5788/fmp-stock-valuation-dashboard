@@ -11,7 +11,6 @@ from models.valuation_models import (
     revenue_multiple_model,
     peg_fair_value,
     rule_of_40_score,
-    rule_of_40_multiple,
     fcf_yield_model,
     upside_downside
 )
@@ -35,7 +34,6 @@ def valuation_panel(symbol):
     shares = income.iloc[0]["weightedAverageShsOut"]
 
     prev_revenue = income.iloc[1]["revenue"]
-
     revenue_growth = (revenue / prev_revenue) - 1
 
     fcf = cashflow.iloc[0]["freeCashFlow"]
@@ -44,16 +42,17 @@ def valuation_panel(symbol):
     cash = balance.iloc[0]["cashAndCashEquivalents"]
 
     net_debt = debt - cash
-
     fcf_margin = fcf / revenue
 
     st.header("Valuation Models")
 
-    st.write(f"**Current Price:** ${price:,.2f}")
+    st.write(f"Current Price: ${price:,.2f}")
 
-    st.write("---")
+    st.divider()
 
+    # -----------------------------
     # Revenue Multiple Model
+    # -----------------------------
 
     multiple = st.slider(
         "EV / Revenue Multiple",
@@ -69,19 +68,23 @@ def valuation_panel(symbol):
         net_debt
     )
 
+    revenue_delta = upside_downside(revenue_price, price)
+
     st.metric(
         "Revenue Multiple Value",
         f"${revenue_price:,.2f}",
-        f"{upside_downside(revenue_price, price):.1%}"
+        f"{revenue_delta:.1%}"
     )
 
     st.caption(
         f"Revenue: ${revenue/1e9:.1f}B | Multiple Used: {multiple}x"
     )
 
-    st.write("---")
+    st.divider()
 
+    # -----------------------------
     # PEG Model
+    # -----------------------------
 
     if revenue_growth <= 0:
 
@@ -98,19 +101,23 @@ def valuation_panel(symbol):
             revenue_growth
         )
 
+        peg_delta = upside_downside(peg_price, price)
+
         st.metric(
             "PEG Model Value",
             f"${peg_price:,.2f}",
-            f"{upside_downside(peg_price, price):.1%}"
+            f"{peg_delta:.1%}"
         )
 
         st.caption(
             f"EPS: {eps:.2f} | Growth: {revenue_growth:.2%}"
         )
 
-    st.write("---")
+    st.divider()
 
+    # -----------------------------
     # Rule of 40
+    # -----------------------------
 
     score = rule_of_40_score(
         revenue_growth,
@@ -126,21 +133,25 @@ def valuation_panel(symbol):
         f"Revenue Growth: {revenue_growth:.2%} | FCF Margin: {fcf_margin:.2%}"
     )
 
-    st.write("---")
+    st.divider()
 
+    # -----------------------------
     # FCF Yield Model
+    # -----------------------------
 
     fcf_price = fcf_yield_model(
         fcf,
         shares
     )
 
+    fcf_delta = upside_downside(fcf_price, price)
+
     st.metric(
         "FCF Yield Value",
         f"${fcf_price:,.2f}",
-        f"{upside_downside(fcf_price, price):.1%}"
+        f"{fcf_delta:.1%}"
     )
 
     st.caption(
         f"Free Cash Flow: ${fcf/1e9:.1f}B"
-    ).2f}")
+    )
