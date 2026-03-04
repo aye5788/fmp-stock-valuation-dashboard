@@ -9,9 +9,9 @@ from api.fmp_client import (
 
 from models.valuation_models import (
     revenue_multiple_model,
+    peg_fair_value,
     rule_of_40_score,
     rule_of_40_multiple,
-    peg_fair_value,
     fcf_yield_model,
     upside_downside
 )
@@ -24,46 +24,38 @@ def valuation_panel(symbol):
     cashflow = get_cashflow_statement(symbol)
     balance = get_balance_sheet(symbol)
 
-    if quote.empty:
-        st.warning("No quote data.")
+    if quote.empty or income.empty:
+        st.warning("Valuation data unavailable.")
         return
 
-    current_price = quote.iloc[0]["price"]
+    price = quote.iloc[0]["price"]
 
-    st.subheader("Valuation Models")
+    revenue = income.iloc[0]["revenue"]
+    eps = income.iloc[0]["eps"]
+    shares = income.iloc[0]["weightedAverageShsOut"]
 
-    # --------------------------------------------------
-    # Pull inputs
-    # --------------------------------------------------
+    prev_revenue = income.iloc[1]["revenue"]
 
-    try:
-        revenue = income.iloc[0]["revenue"]
-        eps = income.iloc[0]["eps"]
+    revenue_growth = (revenue / prev_revenue) - 1
 
-        shares = income.iloc[0]["weightedAverageShsOut"]
+    fcf = cashflow.iloc[0]["freeCashFlow"]
 
-        prev_revenue = income.iloc[1]["revenue"]
-        revenue_growth = (revenue / prev_revenue) - 1
+    debt = balance.iloc[0]["totalDebt"]
+    cash = balance.iloc[0]["cashAndCashEquivalents"]
 
-        free_cash_flow = cashflow.iloc[0]["freeCashFlow"]
+    net_debt = debt - cash
 
-        debt = balance.iloc[0]["totalDebt"]
-        cash = balance.iloc[0]["cashAndCashEquivalents"]
+    fcf_margin = fcf / revenue
 
-        net_debt = debt - cash
+    st.header("Valuation Models")
 
-        fcf_margin = free_cash_flow / revenue
+    st.write(f"**Current Price:** ${price:,.2f}")
 
-    except Exception as e:
+    st.write("---")
 
-        st.error("Unable to compute valuation inputs.")
-        return
+    # Revenue Multiple Model
 
-    # --------------------------------------------------
-    # Revenue multiple valuation
-    # --------------------------------------------------
-
-    ev_multiple = st.slider(
+    multiple = st.slider(
         "EV / Revenue Multiple",
         min_value=1.0,
         max_value=20.0,
@@ -73,87 +65,82 @@ def valuation_panel(symbol):
     revenue_price = revenue_multiple_model(
         revenue,
         shares,
-        ev_multiple,
+        multiple,
         net_debt
     )
 
-    # --------------------------------------------------
-    # Rule of 40
-    # --------------------------------------------------
-
-    rule40 = rule_of_40_score(
-        revenue_growth,
-        fcf_margin
+    st.metric(
+        "Revenue Multiple Value",
+        f"${revenue_price:,.2f}",
+        f"{upside_downside(revenue_price, price):.1%}"
     )
 
-    rule40_multiple = rule_of_40_multiple(
-        revenue_growth,
-        fcf_margin
+    st.caption(
+        f"Revenue: ${revenue/1e9:.1f}B | Multiple Used: {multiple}x"
     )
 
-    rule40_price = revenue_multiple_model(
-        revenue,
-        shares,
-        rule40_multiple,
-        net_debt
-    )
+    st.write("---")
 
-    # --------------------------------------------------
-    # PEG valuation
-    # --------------------------------------------------
+    # PEG Model
 
-    peg_price = peg_fair_value(
-        eps,
-        revenue_growth
-    )
-
-    # --------------------------------------------------
-    # FCF yield valuation
-    # --------------------------------------------------
-
-    fcf_price = fcf_yield_model(
-        free_cash_flow,
-        shares
-    )
-
-    # --------------------------------------------------
-    # Display results
-    # --------------------------------------------------
-
-    st.markdown(f"**Current Price:** ${current_price:,.2f}")
-
-    st.write("")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
+    if revenue_growth <= 0:
 
         st.metric(
-            "Revenue Multiple Value",
-            f"${revenue_price:,.2f}",
-            f"{upside_downside(revenue_price, current_price):.1%}"
+            "PEG Model",
+            "Not meaningful",
+            "Negative growth"
         )
 
-        st.metric(
-            "Rule of 40 Value",
-            f"${rule40_price:,.2f}",
-            f"{upside_downside(rule40_price, current_price):.1%}"
-        )
+    else:
 
-    with col2:
+        peg_price = peg_fair_value(
+            eps,
+            revenue_growth
+        )
 
         st.metric(
             "PEG Model Value",
             f"${peg_price:,.2f}",
-            f"{upside_downside(peg_price, current_price):.1%}"
+            f"{upside_downside(peg_price, price):.1%}"
         )
 
-        st.metric(
-            "FCF Yield Value",
-            f"${fcf_price:,.2f}",
-            f"{upside_downside(fcf_price, current_price):.1%}"
+        st.caption(
+            f"EPS: {eps:.2f} | Growth: {revenue_growth:.2%}"
         )
 
-    st.write("")
+    st.write("---")
 
-    st.write(f"**Rule of 40 Score:** {rule40:.2f}")
+    # Rule of 40
+
+    score = rule_of_40_score(
+        revenue_growth,
+        fcf_margin
+    )
+
+    st.metric(
+        "Rule of 40 Score",
+        f"{score:.2f}"
+    )
+
+    st.caption(
+        f"Revenue Growth: {revenue_growth:.2%} | FCF Margin: {fcf_margin:.2%}"
+    )
+
+    st.write("---")
+
+    # FCF Yield Model
+
+    fcf_price = fcf_yield_model(
+        fcf,
+        shares
+    )
+
+    st.metric(
+        "FCF Yield Value",
+        f"${fcf_price:,.2f}",
+        f"{upside_downside(fcf_price, price):.1%}"
+    )
+
+    st.caption(
+        f"Free Cash Flow: ${fcf/1e9:.1f}B"
+    ).2f}")
