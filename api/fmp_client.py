@@ -81,9 +81,11 @@ def get_key_metrics(symbol, limit=5):
 
 def get_price_history(symbol):
     data = _request(
-        "historical-price-eod",
+        "historical-price-full",
         {
             "symbol": symbol
         },
     )
-    return pd.DataFrame(data)
+
+    df = pd.DataFrame(data["historical"])
+    return df
