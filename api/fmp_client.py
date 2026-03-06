@@ -142,10 +142,11 @@ def get_price_history(symbol):
 
     if "date" in df.columns:
         df["date"] = pd.to_datetime(df["date"])
-    return df
-    
 
-  # --------------------------------------------------
+    return df
+
+
+# --------------------------------------------------
 # Income Statement Growth
 # --------------------------------------------------
 
