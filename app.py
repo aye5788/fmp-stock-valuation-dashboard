@@ -14,6 +14,103 @@ from api.fmp_client import (
 
 
 # --------------------------------------------------
+# Grading functions
+# --------------------------------------------------
+
+def grade_growth(metric, value):
+
+    if metric in ["revenue","eps","operating","ocf","fcf"]:
+
+        if value >= 0.30: return "A"
+        if value >= 0.20: return "B"
+        if value >= 0.10: return "C"
+        if value >= 0.00: return "D"
+        return "F"
+
+    if metric == "receivables":
+
+        if value <= 0.15: return "A"
+        if value <= 0.30: return "B"
+        if value <= 0.50: return "C"
+        if value <= 0.80: return "D"
+        return "F"
+
+    if metric == "inventory":
+
+        if value <= 0.10: return "A"
+        if value <= 0.25: return "B"
+        if value <= 0.50: return "C"
+        if value <= 1.00: return "D"
+        return "F"
+
+    if metric == "assets":
+
+        if value <= 0.10: return "A"
+        if value <= 0.20: return "B"
+        if value <= 0.40: return "C"
+        if value <= 0.60: return "D"
+        return "F"
+
+    if metric == "deferred":
+
+        if value >= 0.40: return "A"
+        if value >= 0.25: return "B"
+        if value >= 0.10: return "C"
+        if value >= 0.00: return "D"
+        return "F"
+
+    if metric == "capex":
+
+        if value <= 0.10: return "A"
+        if value <= 0.25: return "B"
+        if value <= 0.50: return "C"
+        if value <= 1.00: return "D"
+        return "F"
+
+    if metric == "sbc":
+
+        if value <= 0.05: return "A"
+        if value <= 0.10: return "B"
+        if value <= 0.20: return "C"
+        if value <= 0.40: return "D"
+        return "F"
+
+    if metric == "issuance":
+
+        if value <= 0.00: return "A"
+        if value <= 0.05: return "B"
+        if value <= 0.15: return "C"
+        if value <= 0.30: return "D"
+        return "F"
+
+
+def grade_color(grade):
+
+    colors = {
+        "A":"🟢",
+        "B":"🟩",
+        "C":"🟡",
+        "D":"🟠",
+        "F":"🔴"
+    }
+
+    return colors.get(grade,"⚪")
+
+
+def display_metric(col, label, value, metric_type):
+
+    grade = grade_growth(metric_type,value)
+    icon = grade_color(grade)
+
+    col.metric(
+        label,
+        f"{value*100:.1f}%"
+    )
+
+    col.markdown(f"**Grade:** {icon} **{grade}**")
+
+
+# --------------------------------------------------
 # Page config
 # --------------------------------------------------
 
@@ -32,6 +129,7 @@ st.title("Stock Valuation Dashboard")
 col_search, col_button = st.columns([3,1])
 
 with col_search:
+
     ticker_input = st.text_input(
         "Enter Ticker",
         value="",
@@ -39,11 +137,12 @@ with col_search:
     )
 
 with col_button:
+
     search_clicked = st.button("Search")
 
 
 # --------------------------------------------------
-# Run dashboard only when button pressed
+# Run dashboard
 # --------------------------------------------------
 
 if search_clicked:
@@ -63,23 +162,21 @@ if search_clicked:
     col_left, col_right = st.columns([1,2])
 
     with col_left:
-
         valuation_panel(symbol)
 
     with col_right:
-
         price_chart(symbol)
 
     st.divider()
 
     # --------------------------------------------------
-    # Bottom row
+    # Fundamentals
     # --------------------------------------------------
 
     fundamentals_charts(symbol)
 
     # --------------------------------------------------
-    # Pull growth datasets
+    # Pull growth data
     # --------------------------------------------------
 
     financial_growth = get_financial_growth(symbol)
@@ -93,9 +190,9 @@ if search_clicked:
     st.divider()
     st.header("Growth Metrics")
 
-    # ---------------------------
+    # -------------------
     # Growth Speed
-    # ---------------------------
+    # -------------------
 
     if not financial_growth.empty:
 
@@ -103,34 +200,36 @@ if search_clicked:
 
         st.subheader("Growth Speed")
 
-        col1, col2, col3 = st.columns(3)
+        col1,col2,col3 = st.columns(3)
 
-        col1.metric(
+        display_metric(
+            col1,
             "Revenue Growth",
-            f"{financial_growth['revenueGrowth'].iloc[-1]*100:.1f}%"
+            financial_growth["revenueGrowth"].iloc[-1],
+            "revenue"
         )
 
-        col2.metric(
+        display_metric(
+            col2,
             "EPS Growth",
-            f"{financial_growth['epsgrowth'].iloc[-1]*100:.1f}%"
+            financial_growth["epsgrowth"].iloc[-1],
+            "eps"
         )
 
-        col3.metric(
+        display_metric(
+            col3,
             "Operating Income Growth",
-            f"{financial_growth['operatingIncomeGrowth'].iloc[-1]*100:.1f}%"
+            financial_growth["operatingIncomeGrowth"].iloc[-1],
+            "operating"
         )
 
-        chart = financial_growth.set_index("date")[["revenueGrowth", "epsgrowth"]]
+        chart = financial_growth.set_index("date")[["revenueGrowth","epsgrowth"]]
 
         st.line_chart(chart)
 
-    else:
-
-        st.info("Financial growth data unavailable")
-
-    # ---------------------------
+    # -------------------
     # Balance Sheet Quality
-    # ---------------------------
+    # -------------------
 
     if not balance_growth.empty:
 
@@ -138,35 +237,39 @@ if search_clicked:
 
         st.subheader("Balance Sheet Quality")
 
-        col1, col2, col3, col4 = st.columns(4)
+        col1,col2,col3,col4 = st.columns(4)
 
-        col1.metric(
+        display_metric(
+            col1,
             "Receivables Growth",
-            f"{balance_growth['growthNetReceivables'].iloc[-1]*100:.1f}%"
+            balance_growth["growthNetReceivables"].iloc[-1],
+            "receivables"
         )
 
-        col2.metric(
+        display_metric(
+            col2,
             "Inventory Growth",
-            f"{balance_growth['growthInventory'].iloc[-1]*100:.1f}%"
+            balance_growth["growthInventory"].iloc[-1],
+            "inventory"
         )
 
-        col3.metric(
+        display_metric(
+            col3,
             "Asset Growth",
-            f"{balance_growth['growthTotalAssets'].iloc[-1]*100:.1f}%"
+            balance_growth["growthTotalAssets"].iloc[-1],
+            "assets"
         )
 
-        col4.metric(
+        display_metric(
+            col4,
             "Deferred Revenue Growth",
-            f"{balance_growth['growthDeferredRevenue'].iloc[-1]*100:.1f}%"
+            balance_growth["growthDeferredRevenue"].iloc[-1],
+            "deferred"
         )
 
-    else:
-
-        st.info("Balance sheet growth data unavailable")
-
-    # ---------------------------
+    # -------------------
     # Cash Flow Strength
-    # ---------------------------
+    # -------------------
 
     if not cashflow_growth.empty:
 
@@ -174,37 +277,42 @@ if search_clicked:
 
         st.subheader("Cash Flow Strength")
 
-        col1, col2, col3, col4, col5 = st.columns(5)
+        col1,col2,col3,col4,col5 = st.columns(5)
 
-        col1.metric(
+        display_metric(
+            col1,
             "Operating Cash Flow Growth",
-            f"{cashflow_growth['growthOperatingCashFlow'].iloc[-1]*100:.1f}%"
+            cashflow_growth["growthOperatingCashFlow"].iloc[-1],
+            "ocf"
         )
 
-        col2.metric(
+        display_metric(
+            col2,
             "Free Cash Flow Growth",
-            f"{cashflow_growth['growthFreeCashFlow'].iloc[-1]*100:.1f}%"
+            cashflow_growth["growthFreeCashFlow"].iloc[-1],
+            "fcf"
         )
 
-        col3.metric(
+        display_metric(
+            col3,
             "Capex Growth",
-            f"{cashflow_growth['growthCapitalExpenditure'].iloc[-1]*100:.1f}%"
+            cashflow_growth["growthCapitalExpenditure"].iloc[-1],
+            "capex"
         )
 
-        col4.metric(
+        display_metric(
+            col4,
             "Stock-Based Compensation Growth",
-            f"{cashflow_growth['growthStockBasedCompensation'].iloc[-1]*100:.1f}%"
+            cashflow_growth["growthStockBasedCompensation"].iloc[-1],
+            "sbc"
         )
 
-        col5.metric(
+        display_metric(
+            col5,
             "Net Stock Issuance Growth",
-            f"{cashflow_growth['growthNetStockIssuance'].iloc[-1]*100:.1f}%"
+            cashflow_growth["growthNetStockIssuance"].iloc[-1],
+            "issuance"
         )
-
-    else:
-
-        st.info("Cashflow growth data unavailable")
-
 
     # --------------------------------------------------
     # Revenue Segmentation
@@ -213,7 +321,7 @@ if search_clicked:
     st.divider()
     st.header("Revenue Segmentation")
 
-    col_seg1, col_seg2 = st.columns(2)
+    col_seg1,col_seg2 = st.columns(2)
 
     with col_seg1:
 
