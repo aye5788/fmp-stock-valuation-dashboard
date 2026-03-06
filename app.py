@@ -4,9 +4,10 @@ from components.charts import price_chart
 from components.fundamentals import fundamentals_charts
 from components.valuation_box import valuation_panel
 
-# NEW IMPORTS
 from api.fmp_client import (
     get_financial_growth,
+    get_balance_sheet_growth,
+    get_cashflow_statement_growth,
     get_revenue_product_segmentation,
     get_revenue_geographic_segmentation
 )
@@ -78,42 +79,131 @@ if search_clicked:
     fundamentals_charts(symbol)
 
     # --------------------------------------------------
-    # Growth Metrics Section
+    # Pull growth datasets
+    # --------------------------------------------------
+
+    financial_growth = get_financial_growth(symbol)
+    balance_growth = get_balance_sheet_growth(symbol)
+    cashflow_growth = get_cashflow_statement_growth(symbol)
+
+    # --------------------------------------------------
+    # Growth Metrics
     # --------------------------------------------------
 
     st.divider()
     st.header("Growth Metrics")
 
-    growth = get_financial_growth(symbol)
+    # ---------------------------
+    # Growth Speed
+    # ---------------------------
 
-    if not growth.empty:
+    if not financial_growth.empty:
 
-        growth = growth.sort_values("date")
+        financial_growth = financial_growth.sort_values("date")
+
+        st.subheader("Growth Speed")
 
         col1, col2, col3 = st.columns(3)
 
         col1.metric(
             "Revenue Growth",
-            f"{growth['revenueGrowth'].iloc[-1]*100:.1f}%"
+            f"{financial_growth['revenueGrowth'].iloc[-1]*100:.1f}%"
         )
 
         col2.metric(
             "EPS Growth",
-            f"{growth['epsgrowth'].iloc[-1]*100:.1f}%"
+            f"{financial_growth['epsgrowth'].iloc[-1]*100:.1f}%"
         )
 
         col3.metric(
             "Operating Income Growth",
-            f"{growth['operatingIncomeGrowth'].iloc[-1]*100:.1f}%"
+            f"{financial_growth['operatingIncomeGrowth'].iloc[-1]*100:.1f}%"
         )
 
-        chart = growth.set_index("date")[["revenueGrowth", "epsgrowth"]]
+        chart = financial_growth.set_index("date")[["revenueGrowth", "epsgrowth"]]
 
         st.line_chart(chart)
 
     else:
 
-        st.info("Growth data not available.")
+        st.info("Financial growth data unavailable")
+
+    # ---------------------------
+    # Balance Sheet Quality
+    # ---------------------------
+
+    if not balance_growth.empty:
+
+        balance_growth = balance_growth.sort_values("date")
+
+        st.subheader("Balance Sheet Quality")
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        col1.metric(
+            "Receivables Growth",
+            f"{balance_growth['growthNetReceivables'].iloc[-1]*100:.1f}%"
+        )
+
+        col2.metric(
+            "Inventory Growth",
+            f"{balance_growth['growthInventory'].iloc[-1]*100:.1f}%"
+        )
+
+        col3.metric(
+            "Asset Growth",
+            f"{balance_growth['growthTotalAssets'].iloc[-1]*100:.1f}%"
+        )
+
+        col4.metric(
+            "Deferred Revenue Growth",
+            f"{balance_growth['growthDeferredRevenue'].iloc[-1]*100:.1f}%"
+        )
+
+    else:
+
+        st.info("Balance sheet growth data unavailable")
+
+    # ---------------------------
+    # Cash Flow Strength
+    # ---------------------------
+
+    if not cashflow_growth.empty:
+
+        cashflow_growth = cashflow_growth.sort_values("date")
+
+        st.subheader("Cash Flow Strength")
+
+        col1, col2, col3, col4, col5 = st.columns(5)
+
+        col1.metric(
+            "Operating Cash Flow Growth",
+            f"{cashflow_growth['growthOperatingCashFlow'].iloc[-1]*100:.1f}%"
+        )
+
+        col2.metric(
+            "Free Cash Flow Growth",
+            f"{cashflow_growth['growthFreeCashFlow'].iloc[-1]*100:.1f}%"
+        )
+
+        col3.metric(
+            "Capex Growth",
+            f"{cashflow_growth['growthCapitalExpenditure'].iloc[-1]*100:.1f}%"
+        )
+
+        col4.metric(
+            "Stock-Based Compensation Growth",
+            f"{cashflow_growth['growthStockBasedCompensation'].iloc[-1]*100:.1f}%"
+        )
+
+        col5.metric(
+            "Net Stock Issuance Growth",
+            f"{cashflow_growth['growthNetStockIssuance'].iloc[-1]*100:.1f}%"
+        )
+
+    else:
+
+        st.info("Cashflow growth data unavailable")
 
 
     # --------------------------------------------------
@@ -140,7 +230,6 @@ if search_clicked:
         else:
 
             st.info("Product segmentation not available.")
-
 
     with col_seg2:
 
