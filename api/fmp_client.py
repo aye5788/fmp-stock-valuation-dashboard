@@ -143,4 +143,125 @@ def get_price_history(symbol):
     if "date" in df.columns:
         df["date"] = pd.to_datetime(df["date"])
 
+  # --------------------------------------------------
+# Income Statement Growth
+# --------------------------------------------------
+
+def get_income_statement_growth(symbol, limit=5):
+
+    data = _request(
+        "income-statement-growth",
+        {
+            "symbol": symbol,
+            "limit": limit
+        }
+    )
+
+    return pd.DataFrame(data)
+
+
+# --------------------------------------------------
+# Balance Sheet Growth
+# --------------------------------------------------
+
+def get_balance_sheet_growth(symbol, limit=5):
+
+    data = _request(
+        "balance-sheet-statement-growth",
+        {
+            "symbol": symbol,
+            "limit": limit
+        }
+    )
+
+    return pd.DataFrame(data)
+
+
+# --------------------------------------------------
+# Cashflow Growth
+# --------------------------------------------------
+
+def get_cashflow_statement_growth(symbol, limit=5):
+
+    data = _request(
+        "cash-flow-statement-growth",
+        {
+            "symbol": symbol,
+            "limit": limit
+        }
+    )
+
+    return pd.DataFrame(data)
+
+
+# --------------------------------------------------
+# Financial Growth (Combined Growth Endpoint)
+# --------------------------------------------------
+
+def get_financial_growth(symbol, limit=5):
+
+    data = _request(
+        "financial-growth",
+        {
+            "symbol": symbol,
+            "limit": limit
+        }
+    )
+
+    return pd.DataFrame(data)
+
+
+# --------------------------------------------------
+# Revenue Product Segmentation
+# --------------------------------------------------
+
+def get_revenue_product_segmentation(symbol, period="annual"):
+
+    data = _request(
+        "revenue-product-segmentation",
+        {
+            "symbol": symbol,
+            "period": period,
+            "structure": "flat"
+        }
+    )
+
+    if not data:
+        return pd.DataFrame()
+
+    segments = data[0]["data"]
+
+    df = pd.DataFrame(
+        segments.items(),
+        columns=["segment", "revenue"]
+    )
+
+    return df
+
+
+# --------------------------------------------------
+# Revenue Geographic Segmentation
+# --------------------------------------------------
+
+def get_revenue_geographic_segmentation(symbol, period="annual"):
+
+    data = _request(
+        "revenue-geographic-segmentation",
+        {
+            "symbol": symbol,
+            "period": period,
+            "structure": "flat"
+        }
+    )
+
+    if not data:
+        return pd.DataFrame()
+
+    segments = data[0]["data"]
+
+    df = pd.DataFrame(
+        segments.items(),
+        columns=["region", "revenue"]
+    )
+
     return df
